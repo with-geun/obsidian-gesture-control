@@ -1,0 +1,37 @@
+{
+	"name": "obsidian-gesture-control",
+	"version": "0.1.0",
+	"description": "Control Obsidian with hand gestures via webcam using MediaPipe hand tracking",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "node esbuild.config.mjs production"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/with-geun/obsidian-gesture-control.git"
+	},
+	"bugs": {
+		"url": "https://github.com/with-geun/obsidian-gesture-control/issues"
+	},
+	"homepage": "https://github.com/with-geun/obsidian-gesture-control#readme",
+	"license": "MIT",
+	"keywords": [
+		"obsidian",
+		"gesture",
+		"hand-tracking",
+		"mediapipe",
+		"webcam",
+		"hands-free"
+	],
+	"dependencies": {
+		"@mediapipe/tasks-vision": "^0.10.15"
+	},
+	"devDependencies": {
+		"@types/node": "^20.11.0",
+		"esbuild": "^0.20.0",
+		"obsidian": "latest",
+		"tslib": "^2.6.0",
+		"typescript": "^5.3.0"
+	}
+}

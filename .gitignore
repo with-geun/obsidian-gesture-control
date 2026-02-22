@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output (distributed via GitHub Release, not repo)
+main.js
+*.map
+
+# Obsidian plugin data
+data.json
+
+# macOS
+.DS_Store
+
+# Native binaries (compiled separately, distributed via GitHub Release)
+native-camera
+DictationKey
+GestureCamera.app/
+
+# Swift source for native camera (keep in repo)
+# native-camera.swift
+# dictation-key.swift
+
+# WASM files (distributed via GitHub Release)
+wasm/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
