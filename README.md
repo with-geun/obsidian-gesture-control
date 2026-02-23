@@ -4,8 +4,7 @@ Control your vault with hand gestures via webcam. No mouse, no keyboard -- just 
 
 > **macOS only** -- requires camera and Accessibility permissions.
 
-<!-- TODO: Add demo GIF here -->
-<!-- ![Demo](docs/demo.gif) -->
+![Demo](docs/resized_image.gif)
 
 ## Disclosure
 
