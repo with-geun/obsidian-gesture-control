@@ -7,6 +7,17 @@ Control Obsidian with hand gestures via your webcam. No mouse, no keyboard -- ju
 <!-- TODO: Add demo GIF here -->
 <!-- ![Demo](docs/demo.gif) -->
 
+## Disclosure
+
+| Item | Details |
+|------|---------|
+| **Platform** | macOS only (Apple Silicon or Intel) |
+| **Native binary** | `GestureCamera.app` -- a macOS camera helper built from [Swift source](src/camera/native-camera.swift) included in this repo. Must be installed explicitly by the user via Settings. |
+| **Network access** | (1) One-time download of native helper + WASM files from [this repo's GitHub Releases](https://github.com/with-geun/obsidian-gesture-control/releases) when the user clicks "Install native helper" in Settings. (2) One-time download of the hand tracking model (~12 MB) from `storage.googleapis.com` on first camera launch. No other network requests are made after initial setup. |
+| **Permissions** | Camera (required for hand tracking). Accessibility (optional, for Dictation/Mic toggle features only). |
+| **Temp files** | `/tmp/gesture-control-frame.jpg` (camera frame), `/tmp/gesture-control-status` (camera ready state), `/tmp/gesture-control-pid` (camera process ID). All deleted when the camera stops. No files are created inside or outside the vault. |
+| **Telemetry** | None. No analytics, no tracking, no data sent anywhere. |
+
 ## Features
 
 - **8 hand gestures** mapped to any Obsidian command (Palm, Fist, Thumb Up/Down, Victory, ILoveYou, OK, Three)
@@ -15,10 +26,10 @@ Control Obsidian with hand gestures via your webcam. No mouse, no keyboard -- ju
   - Single-hand cursor control
   - Thumb trigger for click and drag
 - **Camera preview HUD** -- cyberpunk-style skeleton overlay, draggable and resizable
-- **Dictation toggle** -- trigger macOS Dictation with a gesture
+- **Dictation toggle** -- trigger macOS Dictation with a gesture (requires Accessibility permission)
 - **Mic toggle** -- mute/unmute microphone with a gesture
 - **Custom action system** -- extend beyond Obsidian commands with system-level actions
-- **Privacy-first** -- all processing happens locally, no data leaves your machine
+- **Privacy-first** -- all processing happens locally via MediaPipe WASM, no data leaves your machine
 
 ## Installation
 
@@ -27,7 +38,10 @@ Control Obsidian with hand gestures via your webcam. No mouse, no keyboard -- ju
 1. Open Obsidian Settings > Community plugins
 2. Click "Browse" and search for **Gesture Control**
 3. Click Install, then Enable
-4. Native assets (camera app + WASM files) will be downloaded automatically on first launch
+4. Go to **Settings > Gesture Control** and click **"Install native helper"**
+   - This downloads the camera helper app and WASM files (~3 MB) from GitHub Releases
+   - The download URL and source code are shown in Settings for full transparency
+5. You're ready! Click the hand icon to start.
 
 ### Manual Install
 
@@ -79,6 +93,7 @@ Open **Settings > Gesture Control** to configure:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| Native helper | -- | Install/reinstall the camera helper and WASM files |
 | Confidence Threshold | 0.7 | How certain detection must be (0.5--1.0) |
 | Dwell Time | 500ms | How long to hold a gesture before triggering (200--1500ms) |
 | Cooldown Time | 1000ms | Minimum wait between triggers (300--3000ms) |
@@ -89,22 +104,31 @@ Open **Settings > Gesture Control** to configure:
 
 ## Requirements
 
-- **macOS** (Apple Silicon or Intel)
+- **macOS** (Apple Silicon or Intel) -- this plugin relies on native macOS camera APIs (AVFoundation) because Electron's `getUserMedia` does not deliver video frames in current versions
 - Webcam (built-in or external)
 - Obsidian 1.0.0+
 - **Camera permission** for GestureCamera
 - **Accessibility permission** for Dictation/Mic features (optional)
-- Internet connection on first launch (downloads hand tracking model from Google CDN)
+- Internet connection for initial setup only (downloading native helper + hand tracking model)
+
+## Why macOS Only?
+
+Electron (Obsidian's runtime) has a known issue where `getUserMedia` returns a "live" MediaStream but delivers zero video frames. All standard web APIs for camera access fail. The workaround requires a native macOS app (`GestureCamera.app`, built from Swift/AVFoundation) that captures frames to a temp file, which the plugin reads. The Swift source code is [included in this repository](src/camera/native-camera.swift) for full auditability.
 
 ## Privacy
 
 - All video processing runs **locally** using MediaPipe WASM -- no cloud APIs
 - **No images or video are stored, recorded, or transmitted**
-- Camera frames exist only in memory and a temporary file (`/tmp/gesture-control-frame.jpg`) deleted when camera stops
-- The hand tracking model is downloaded once from Google's CDN and cached locally
-- The plugin makes no network requests after initial setup
+- Camera frames exist only in a temporary file (`/tmp/gesture-control-frame.jpg`) which is deleted when the camera stops
+- Additional temp files (`/tmp/gesture-control-status`, `/tmp/gesture-control-pid`) are used for IPC with the camera helper and deleted on stop
+- The hand tracking model is downloaded once from Google's CDN (`storage.googleapis.com`) and cached locally by the browser
+- The plugin makes **zero network requests** after initial setup
+- No telemetry, analytics, or tracking of any kind
 
 ## Troubleshooting
+
+**"Native helper not installed"**
+Go to Settings > Gesture Control and click "Install native helper". This downloads the camera app and WASM files (~3 MB) from this plugin's GitHub Releases.
 
 **Camera permission denied**
 Go to System Settings > Privacy & Security > Camera and allow Obsidian (or GestureCamera).
@@ -118,27 +142,21 @@ Adjust Confidence Threshold and Dwell Time in Settings.
 **Dictation not working**
 Ensure Accessibility permission is granted in System Settings > Privacy & Security > Accessibility for Obsidian. Also verify that Dictation is enabled in System Settings > Keyboard > Dictation.
 
-**Plugin not loading after community install**
-Click the hand icon to trigger first launch -- native assets will be downloaded automatically. If it fails, check your internet connection and try again.
+**Native helper download failed**
+Download `gesture-control-native-macos.zip` manually from the [releases page](https://github.com/with-geun/obsidian-gesture-control/releases) and extract it into the plugin folder (`<vault>/.obsidian/plugins/gesture-control/`).
 
-**Native assets download failed**
-Download `gesture-control-native-macos.zip` manually from the [releases page](https://github.com/with-geun/obsidian-gesture-control/releases) and extract it into the plugin folder.
+## Third-Party Licenses
+
+- [MediaPipe](https://github.com/google-ai-edge/mediapipe) (Apache 2.0) -- hand landmark detection model and WASM runtime
 
 ## Development
 
 ```bash
-# Clone
 git clone https://github.com/with-geun/obsidian-gesture-control.git
 cd obsidian-gesture-control
-
-# Install
 npm install
-
-# Dev (watch mode)
-npm run dev
-
-# Build
-npm run build
+npm run dev    # watch mode
+npm run build  # production build
 ```
 
 ### Native Camera Build (macOS)

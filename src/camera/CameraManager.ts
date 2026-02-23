@@ -108,8 +108,6 @@ export class CameraManager {
 			);
 		}
 
-		console.log("[GestureControl] launching GestureCamera.app via open:", appBundlePath);
-
 		// Cleanup stale files
 		for (const p of [FRAME_PATH, STATUS_PATH, PID_PATH]) {
 			try { unlinkSync(p); } catch { /* ignore */ }
@@ -120,7 +118,6 @@ export class CameraManager {
 
 		// Launch via 'open -n -a' so macOS Launch Services registers it properly
 		const parentPid = process.pid;
-		console.log("[GestureControl] parent PID:", parentPid);
 
 		execFile("open", [
 			"-n", "-a", appBundlePath,
@@ -134,8 +131,6 @@ export class CameraManager {
 		], (err) => {
 			if (err) {
 				console.error("[GestureControl] open command error:", err);
-			} else {
-				console.log("[GestureControl] open command completed");
 			}
 		});
 
@@ -151,7 +146,6 @@ export class CameraManager {
 						const content = readFileSync(STATUS_PATH, "utf-8");
 						if (content.includes("READY")) {
 							clearInterval(check);
-							console.log("[GestureControl] native camera READY (via open)");
 							resolve();
 						} else if (content.includes("ERROR")) {
 							clearInterval(check);
@@ -170,7 +164,6 @@ export class CameraManager {
 		try {
 			if (existsSync(PID_PATH)) {
 				this.nativePid = parseInt(readFileSync(PID_PATH, "utf-8").trim());
-				console.log("[GestureControl] native camera PID:", this.nativePid);
 			}
 		} catch { /* ignore */ }
 
@@ -181,7 +174,6 @@ export class CameraManager {
 				checks++;
 				if (existsSync(FRAME_PATH)) {
 					clearInterval(check);
-					console.log("[GestureControl] first frame file ready");
 					resolve();
 				}
 				if (checks > 50) { // 5 seconds
@@ -215,11 +207,6 @@ export class CameraManager {
 				const data = readFileSync(FRAME_PATH);
 				if (data.length < 100) return;
 
-				frameCount++;
-				if (frameCount <= 3) {
-					console.log("[GestureControl] frame #" + frameCount, "size:", data.length);
-				}
-
 				const blob = new Blob([data], { type: "image/jpeg" });
 				createImageBitmap(blob).then((bitmap) => {
 					if (!this.running) {
@@ -241,7 +228,6 @@ export class CameraManager {
 			}
 		}, Math.floor(1000 / FPS));
 
-		console.log("[GestureControl] camera started (via open, file-based)");
 		return captureCanvas;
 	}
 
@@ -257,7 +243,6 @@ export class CameraManager {
 		if (this.nativePid) {
 			try {
 				process.kill(this.nativePid, "SIGTERM");
-				console.log("[GestureControl] sent SIGTERM to PID:", this.nativePid);
 			} catch { /* already dead */ }
 			this.nativePid = null;
 		}

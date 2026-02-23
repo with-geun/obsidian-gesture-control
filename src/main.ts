@@ -150,8 +150,8 @@ export default class GestureControlPlugin extends Plugin {
 				await this.stopPipeline();
 				new Notice("Gesture camera: OFF");
 			} else {
-				// Ensure native assets exist (auto-download on first community install)
-				await this.ensureNativeAssets();
+				// Check native assets exist (user must install via Settings)
+				this.checkNativeAssets();
 
 				const frameCanvas = await this.camera.start(this.app);
 				this.camera.setPreviewSettings(this.settings.preview);
@@ -191,13 +191,14 @@ export default class GestureControlPlugin extends Plugin {
 		return require("node:path").join(basePath, ".obsidian/plugins/gesture-control");
 	}
 
-	private async ensureNativeAssets(): Promise<void> {
+	private checkNativeAssets(): void {
 		const pluginDir = this.getPluginDir();
 		const assets = new AssetManager(pluginDir);
-		if (assets.hasNativeAssets()) return;
-
-		new Notice("Gesture Control: Native assets not found. Downloading...", 5000);
-		await assets.downloadAssets(this.manifest.version);
+		if (!assets.hasNativeAssets()) {
+			throw new Error(
+				"Native helper not installed. Go to Settings > Gesture Control and click \"Install native helper\" first."
+			);
+		}
 	}
 
 	private friendlyError(err: unknown): string {
@@ -214,8 +215,8 @@ export default class GestureControlPlugin extends Plugin {
 		if (raw.includes("hand_landmarker") || raw.includes("model")) {
 			return "Failed to load hand tracking model. Check your internet connection.";
 		}
-		if (raw.includes("native assets") || raw.includes("Failed to download")) {
-			return raw; // Already user-friendly from AssetManager
+		if (raw.includes("Native helper") || raw.includes("native helper")) {
+			return raw; // Already user-friendly
 		}
 		return `Gesture Control error: ${raw}`;
 	}

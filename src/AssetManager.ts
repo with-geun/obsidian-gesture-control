@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { Notice } from "obsidian";
 import { execFile } from "node:child_process";
@@ -8,8 +8,11 @@ const ASSET_NAME = "gesture-control-native-macos.zip";
 
 /**
  * Manages native asset downloads (GestureCamera.app + wasm/).
+ *
  * On community plugin installs, only main.js/manifest.json/styles.css are delivered.
- * This module downloads the rest from GitHub Releases on first launch.
+ * The user must explicitly install the native helper via the Settings UI button.
+ * This is intentional -- downloading and executing a native binary should require
+ * clear user consent, not happen silently on first launch.
  */
 export class AssetManager {
 	private pluginDir: string;
@@ -26,23 +29,29 @@ export class AssetManager {
 		return existsSync(appPath) && existsSync(wasmJs) && existsSync(wasmBin);
 	}
 
+	/** Get the download URL for the native assets zip */
+	getDownloadUrl(version: string): string {
+		return `https://github.com/${GITHUB_REPO}/releases/download/${version}/${ASSET_NAME}`;
+	}
+
 	/**
-	 * Download native assets from the GitHub release matching the plugin version.
-	 * Uses manifest.json version to find the correct release tag.
+	 * Download and install native assets from the GitHub release.
+	 * Called explicitly by the user via Settings UI "Install" button.
+	 *
+	 * Downloads from: https://github.com/{REPO}/releases/download/{version}/{ASSET_NAME}
+	 * Extracts: GestureCamera.app/ (macOS camera helper) + wasm/ (MediaPipe WASM runtime)
 	 */
 	async downloadAssets(version: string): Promise<void> {
-		const zipUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${ASSET_NAME}`;
+		const zipUrl = this.getDownloadUrl(version);
 
-		const notice = new Notice("Gesture Control: Downloading native assets...", 0);
+		const notice = new Notice("Gesture Control: Downloading native helper...", 0);
 
 		try {
-			// Download zip using curl (available on all macOS)
 			const zipPath = join(this.pluginDir, ASSET_NAME);
 
-			await this.exec("curl", ["-L", "-o", zipPath, zipUrl]);
-			notice.setMessage("Gesture Control: Extracting native assets...");
+			await this.exec("curl", ["-L", "--fail", "-o", zipPath, zipUrl]);
+			notice.setMessage("Gesture Control: Extracting...");
 
-			// Extract zip into plugin directory
 			await this.exec("unzip", ["-o", zipPath, "-d", this.pluginDir]);
 
 			// Make GestureCamera executable
@@ -52,23 +61,32 @@ export class AssetManager {
 			}
 
 			// Clean up zip
-			try {
-				const { unlinkSync } = require("node:fs");
-				unlinkSync(zipPath);
-			} catch { /* ignore */ }
+			try { unlinkSync(zipPath); } catch { /* ignore */ }
 
-			notice.setMessage("Gesture Control: Native assets ready!");
+			notice.setMessage("Gesture Control: Native helper installed!");
 			setTimeout(() => notice.hide(), 3000);
 
 		} catch (err) {
 			notice.hide();
 			const msg = err instanceof Error ? err.message : String(err);
 			throw new Error(
-				`Failed to download native assets: ${msg}\n\n` +
-				`You can download manually from:\n` +
-				`https://github.com/${GITHUB_REPO}/releases/download/${version}/${ASSET_NAME}\n` +
+				`Failed to download native helper: ${msg}\n\n` +
+				`Manual download: ${zipUrl}\n` +
 				`Extract into: ${this.pluginDir}`
 			);
+		}
+	}
+
+	/** Remove native assets */
+	async removeAssets(): Promise<void> {
+		const appDir = join(this.pluginDir, "GestureCamera.app");
+		const wasmDir = join(this.pluginDir, "wasm");
+		// Use rm -rf for directories
+		if (existsSync(appDir)) {
+			await this.exec("rm", ["-rf", appDir]);
+		}
+		if (existsSync(wasmDir)) {
+			await this.exec("rm", ["-rf", wasmDir]);
 		}
 	}
 

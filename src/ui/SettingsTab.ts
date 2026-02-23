@@ -1,12 +1,15 @@
 import {
 	App,
 	FuzzySuggestModal,
+	Notice,
 	PluginSettingTab,
 	Setting,
 	Command,
 } from "obsidian";
 import { GestureType, GestureMapping, CUSTOM_ACTIONS, CUSTOM_ACTION_PREFIX, PreviewMode } from "../types";
 import type GestureControlPlugin from "../main";
+import { AssetManager } from "../AssetManager";
+import { join } from "node:path";
 
 const GESTURE_LABELS: Record<string, string> = {
 	[GestureType.Palm]: "Open Palm",
@@ -87,6 +90,9 @@ export class SettingsTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		// — Native Helper —
+		this.addNativeHelperSection(containerEl);
 
 		// — Gesture Mappings —
 		containerEl.createEl("h2", { text: "Gesture Mappings" });
@@ -242,6 +248,83 @@ export class SettingsTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			);
+	}
+
+	private addNativeHelperSection(containerEl: HTMLElement): void {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const basePath = (this.app.vault.adapter as any).getBasePath() as string;
+		const pluginDir = join(basePath, ".obsidian/plugins/gesture-control");
+		const assets = new AssetManager(pluginDir);
+		const installed = assets.hasNativeAssets();
+		const version = this.plugin.manifest.version;
+
+		containerEl.createEl("h2", { text: "Native Helper" });
+
+		const descFragment = document.createDocumentFragment();
+		descFragment.appendText(
+			"This plugin requires a native macOS camera helper (GestureCamera.app) and MediaPipe WASM files. "
+		);
+		if (installed) {
+			descFragment.appendText("Status: Installed.");
+		} else {
+			descFragment.appendText(
+				"Status: Not installed. Click the button below to download from GitHub. "
+			);
+			const link = descFragment.createEl("a", {
+				text: "View release",
+				href: assets.getDownloadUrl(version),
+			});
+			link.setAttr("target", "_blank");
+		}
+
+		const setting = new Setting(containerEl)
+			.setName(installed ? "Native helper (installed)" : "Native helper (not installed)")
+			.setDesc(descFragment);
+
+		if (installed) {
+			setting.addButton((btn) =>
+				btn
+					.setButtonText("Reinstall")
+					.onClick(async () => {
+						btn.setDisabled(true);
+						btn.setButtonText("Downloading...");
+						try {
+							await assets.removeAssets();
+							await assets.downloadAssets(version);
+							this.display();
+						} catch (err) {
+							const msg = err instanceof Error ? err.message : String(err);
+							new Notice(msg, 10000);
+							btn.setDisabled(false);
+							btn.setButtonText("Reinstall");
+						}
+					})
+			);
+		} else {
+			setting.addButton((btn) =>
+				btn
+					.setButtonText("Install native helper")
+					.setCta()
+					.onClick(async () => {
+						btn.setDisabled(true);
+						btn.setButtonText("Downloading...");
+						try {
+							await assets.downloadAssets(version);
+							this.display();
+						} catch (err) {
+							const msg = err instanceof Error ? err.message : String(err);
+							new Notice(msg, 10000);
+							btn.setDisabled(false);
+							btn.setButtonText("Install native helper");
+						}
+					})
+			);
+		}
+
+		containerEl.createEl("p", {
+			text: `Downloads from: github.com/${("with-geun/obsidian-gesture-control")} (release ${version})`,
+			cls: "setting-item-description",
+		});
 	}
 
 	private addGestureSection(

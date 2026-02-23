@@ -21,9 +21,6 @@ export class ContinuousActionDispatcher {
 	constructor() {
 		this.webContents = getWebContents();
 		this.useNative = this.webContents !== null;
-		console.log(
-			`[GestureControl] Input mode: ${this.useNative ? "native Electron" : "synthetic DOM"}`
-		);
 	}
 
 	dispatch(event: ContinuousGestureEvent): void {
