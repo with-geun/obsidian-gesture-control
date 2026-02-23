@@ -1,6 +1,6 @@
 # Gesture Control for Obsidian
 
-Control Obsidian with hand gestures via your webcam. No mouse, no keyboard -- just your hands.
+Control your vault with hand gestures via webcam. No mouse, no keyboard -- just your hands.
 
 > **macOS only** -- requires camera and Accessibility permissions.
 

@@ -3,7 +3,7 @@
 	"name": "Gesture Control",
 	"version": "0.1.0",
 	"minAppVersion": "1.0.0",
-	"description": "Control Obsidian with hand gestures via webcam using MediaPipe hand tracking.",
+	"description": "Control your vault with hand gestures via webcam using MediaPipe hand tracking.",
 	"author": "with-geun",
 	"authorUrl": "https://github.com/with-geun",
 	"isDesktopOnly": true

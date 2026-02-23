@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-gesture-control",
 	"version": "0.1.0",
-	"description": "Control Obsidian with hand gestures via webcam using MediaPipe hand tracking",
+	"description": "Control your vault with hand gestures via webcam using MediaPipe hand tracking",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
